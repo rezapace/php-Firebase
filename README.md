@@ -88,7 +88,5 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 ```
 
-
-
 ## Conclusion
 This project integrates Font Awesome for icons and Firebase for backend services using PHP. The Firebase PHP SDK is used to handle authentication, database interactions, and file storage.
