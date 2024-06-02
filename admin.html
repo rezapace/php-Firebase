@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - CRUD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Admin Panel - CRUD</h2>
+        
+        <!-- Form untuk menambah/memperbarui produk -->
+        <form id="product-form">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <input type="text" class="form-control" id="author" required>
+            </div>
+            <div class="mb-3">
+                <label for="author_profile" class="form-label">Author Profile</label>
+                <input type="url" class="form-control" id="author_profile" required>
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Image URL</label>
+                <input type="url" class="form-control" id="image" required>
+            </div>
+            <div class="mb-3">
+                <label for="price" class="form-label">Price</label>
+                <input type="number" class="form-control" id="price" required>
+            </div>
+            <div class="mb-3">
+                <label for="prev_price" class="form-label">Previous Price</label>
+                <input type="number" class="form-control" id="prev_price">
+            </div>
+            <div class="mb-3">
+                <label for="rating" class="form-label">Rating</label>
+                <input type="number" class="form-control" id="rating" required>
+            </div>
+            <div class="mb-3">
+                <label for="reviews" class="form-label">Reviews</label>
+                <input type="number" class="form-control" id="reviews" required>
+            </div>
+            <div class="mb-3">
+                <label for="sales" class="form-label">Sales</label>
+                <input type="number" class="form-control" id="sales" required>
+            </div>
+            <div class="mb-3">
+                <label for="buy" class="form-label">Buy Link</label>
+                <input type="url" class="form-control" id="buy" required>
+            </div>
+            <input type="hidden" id="product-id">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+
+        <!-- Tabel untuk menampilkan produk -->
+        <table class="table mt-5">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="product-list"></tbody>
+        </table>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.2.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/9.2.0/firebase-firestore.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIBMLafGU",
+            authDomain: "pr.firebaseapp.com",
+            projectId: "pr",
+            storageBucket: "pro.appspot.com",
+            messagingSenderId: "617148",
+            appId: "1:61148:web:49dd61",
+            measurementId: "G-5YVB"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to get products
+        async function getProducts() {
+            const querySnapshot = await getDocs(collection(db, "products"));
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                const product = doc.data();
+                const productRow = `
+                    <tr data-id="${doc.id}">
+                        <td>${product.title}</td>
+                        <td>${product.author}</td>
+                        <td>${product.price}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm edit-button">Edit</button>
+                            <button class="btn btn-danger btn-sm delete-button">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                productList.innerHTML += productRow;
+            });
+
+            // Add event listeners to Edit and Delete buttons
+            document.querySelectorAll('.edit-button').forEach(button => {
+                button.addEventListener('click', handleEdit);
+            });
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+
+        // Function to handle form submission
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('product-id').value;
+            const productData = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                author_profile: document.getElementById('author_profile').value,
+                image: document.getElementById('image').value,
+                price: document.getElementById('price').value,
+                prev_price: document.getElementById('prev_price').value,
+                rating: document.getElementById('rating').value,
+                reviews: document.getElementById('reviews').value,
+                sales: document.getElementById('sales').value,
+                buy: document.getElementById('buy').value
+            };
+
+            if (id) {
+                // Update product
+                const productRef = doc(db, "products", id);
+                await updateDoc(productRef, productData);
+            } else {
+                // Add new product
+                await addDoc(collection(db, "products"), productData);
+            }
+
+            // Reset form
+            e.target.reset();
+            document.getElementById('product-id').value = "";
+
+            // Refresh product list
+            getProducts();
+        });
+
+        // Function to handle edit button
+        function handleEdit(e) {
+            const id = e.target.closest('tr').getAttribute('data-id');
+            const productRef = doc(db, "products", id);
+            getDocs(productRef).then((doc) => {
+                if (doc.exists()) {
+                    const product = doc.data();
+                    document.getElementById('product-id').value = id;
+                    document.getElementById('title').value = product.title;
+                    document.getElementById('author').value = product.author;
+                    document.getElementById('author_profile').value = product.author_profile;
+                    document.getElementById('image').value = product.image;
+                    document.getElementById('price').value = product.price;
+                    document.getElementById('prev_price').value = product.prev_price;
+                    document.getElementById('rating').value = product.rating;
+                    document.getElementById('reviews').value = product.reviews;
+                    document.getElementById('sales').value = product.sales;
+                    document.getElementById('buy').value = product.buy;
+                }
+            }).catch((error) => {
+                console.error("Error getting document: ", error);
+            });
+        }
+
+        // Function to handle delete button
+        async function handleDelete(e) {
+            const id = e.target.closest('tr').getAttribute('data-id');
+            await deleteDoc(doc(db, "products", id));
+            getProducts();
+        }
+
+        // Fetch products when the page loads
+        getProducts();
+    </script>
+</body>
+</html>
